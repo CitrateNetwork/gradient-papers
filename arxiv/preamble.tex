@@ -1,0 +1,51 @@
+% =====================================================================
+% The Gradient Papers (v3) — shared arXiv preamble
+% Publisher/affiliation: Citrate Inc.  Authors: L. Klosowski, L. Mendenhall.
+% Build a paper with:  tectonic <paperNo>.tex
+% Only standard packages — no custom .sty required. Derived from the
+% NAT (Paper XI) arXiv template so the whole series renders as one system.
+% =====================================================================
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb}
+\usepackage{fontspec}          % XeTeX/tectonic: real Unicode (µ, ×, ε, θ, en/em dashes)
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{calc}              % length arithmetic for pandoc pipe tables
+\usepackage{longtable}
+\usepackage{microtype}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage[hidelinks]{hyperref}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+
+% --- pandoc pipe-table helpers (fragment builds lack the default template) ---
+\providecommand{\real}[1]{#1}
+\providecommand{\tightlist}{\setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\providecommand{\pandocbounded}[1]{#1}
+
+% --- Series house macros -------------------------------------------------
+% Honest maturity tags used inline and in tables.
+\newcommand{\Implemented}{\textcolor{black!80}{\textbf{[Implemented]}}}
+\newcommand{\Specified}{\textit{[Specified]}}
+\newcommand{\Practiced}{\textit{[Practiced]}}
+\newcommand{\Verified}{\textbf{[Verified]}}
+\newcommand{\Hypothesis}{\textit{[Hypothesis]}}
+\newcommand{\Theoretical}{\textit{[Theoretical]}}
+\newcommand{\code}[1]{\texttt{\small #1}}   % file:line anchors
+\newcommand{\zone}[1]{\textsc{#1}}
+\newcommand{\Qff}{Q16.16}
+
+% --- Running header: series identity, one system across all 12 papers ----
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\small The Gradient Papers}
+\fancyhead[R]{\small Citrate Inc.}
+\fancyfoot[C]{\thepage}
+
+% Standard affiliation block; each paper \input-s this preamble then sets
+% \title / \author / \date and calls \maketitle.
+\newcommand{\CitrateAffil}{Citrate Inc.}

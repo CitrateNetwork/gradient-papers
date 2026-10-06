@@ -1,0 +1,479 @@
+<style>
+  :root{
+    --bg:#0A0D18; --bg2:#0E1226; --panel:rgba(150,160,210,.06);
+    --lattice:rgba(140,150,205,.14); --node:rgba(155,165,215,.55);
+    --pip:#F5C542; --proof:#39D0D8; --contra:#E85CB0; --danger:#FF5A5A; --green:#6EE787;
+    --ink:#EBEDF7; --muted:#9AA0C4; --hair:rgba(150,160,210,.16);
+    --disp: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", monospace;
+    --stagew: 980px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{ --bg:#EDEFF7; --bg2:#F7F8FC; --panel:rgba(30,40,80,.04);
+      --lattice:rgba(40,52,95,.13); --node:rgba(55,68,125,.5);
+      --pip:#C9890C; --proof:#0E9CA6; --contra:#C93F92; --danger:#D33; --green:#2Fae5f;
+      --ink:#141830; --muted:#565F80; --hair:rgba(40,52,95,.16); }
+  }
+  :root[data-theme="dark"]{ --bg:#0A0D18; --bg2:#0E1226; --panel:rgba(150,160,210,.06);
+    --lattice:rgba(140,150,205,.14); --node:rgba(155,165,215,.55);
+    --pip:#F5C542; --proof:#39D0D8; --contra:#E85CB0; --danger:#FF5A5A; --green:#6EE787;
+    --ink:#EBEDF7; --muted:#9AA0C4; --hair:rgba(150,160,210,.16); }
+  :root[data-theme="light"]{ --bg:#EDEFF7; --bg2:#F7F8FC; --panel:rgba(30,40,80,.04);
+    --lattice:rgba(40,52,95,.13); --node:rgba(55,68,125,.5);
+    --pip:#C9890C; --proof:#0E9CA6; --contra:#C93F92; --danger:#D33; --green:#2Fae5f;
+    --ink:#141830; --muted:#565F80; --hair:rgba(40,52,95,.16); }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:radial-gradient(1200px 700px at 50% -10%, var(--bg2), var(--bg) 60%);
+    color:var(--ink); font-family:var(--disp); -webkit-font-smoothing:antialiased; line-height:1.5;}
+  .wrap{max-width:1120px; margin:0 auto; padding:26px 20px 64px;}
+  header.top{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .kicker{font:600 11px/1 var(--mono); letter-spacing:.22em; text-transform:uppercase; color:var(--muted);}
+  h1{margin:3px 0 0; font-size:clamp(19px,2.3vw,26px); font-weight:650; letter-spacing:-.01em; text-wrap:balance;}
+  .sub{color:var(--muted); font-size:13px; max-width:50ch}
+
+  /* paper selector */
+  .picker{display:flex; gap:6px; flex-wrap:wrap; margin:18px 0 4px}
+  .chip{appearance:none; border:1px solid var(--hair); background:var(--panel); color:var(--muted);
+    font:600 12px/1 var(--mono); letter-spacing:.04em; padding:8px 11px; border-radius:9px; cursor:pointer;
+    transition:border-color .15s, color .15s, background .15s;}
+  .chip:hover{border-color:var(--pip); color:var(--ink)}
+  .chip.on{border-color:var(--pip); color:var(--ink); background:color-mix(in oklab, var(--pip) 12%, transparent)}
+
+  .stage-shell{margin:16px auto 0; max-width:var(--stagew);}
+  .stage{position:relative; aspect-ratio:16/9; width:100%; border:1px solid var(--hair);
+    border-radius:14px; overflow:hidden; background:var(--bg); box-shadow:0 24px 60px -30px rgba(0,0,0,.7);}
+  canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .eyebrow{position:absolute; left:16px; top:14px; z-index:3; display:flex; gap:10px; align-items:center;
+    font:600 11px/1 var(--mono); letter-spacing:.14em; text-transform:uppercase; color:var(--muted);}
+  .eyebrow .tc{color:var(--ink); opacity:.8} .eyebrow .st{color:var(--ink)}
+  .title-ov{position:absolute; left:16px; right:16px; top:50%; transform:translateY(-50%); z-index:2;
+    text-align:center; pointer-events:none; transition:opacity .5s; }
+  .title-ov .lg{font-size:clamp(15px,2vw,22px); font-weight:600; color:var(--ink); text-wrap:balance}
+  .title-ov .lbl{font:600 11px/1 var(--mono); letter-spacing:.2em; text-transform:uppercase; color:var(--muted); margin-bottom:8px}
+  .cap{position:absolute; left:0; right:0; bottom:0; z-index:3; padding:26px 24px 22px;
+    background:linear-gradient(to top, rgba(5,7,15,.80), rgba(5,7,15,0));
+    font-size:clamp(14px,1.55vw,18px); font-weight:450; color:#EEF0FA; text-shadow:0 1px 12px rgba(0,0,0,.55);}
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]) .cap{background:linear-gradient(to top, rgba(232,235,246,.94), rgba(232,235,246,0)); color:#1a1f38; text-shadow:none} }
+  :root[data-theme="light"] .cap{background:linear-gradient(to top, rgba(232,235,246,.94), rgba(232,235,246,0)); color:#1a1f38; text-shadow:none}
+  .cap .q{opacity:.5; font-family:var(--mono); margin:0 2px}
+
+  .transport{max-width:var(--stagew); margin:14px auto 0; display:flex; align-items:center; gap:14px; flex-wrap:wrap;}
+  button.play{appearance:none; border:1px solid var(--hair); background:var(--panel); color:var(--ink);
+    width:44px; height:44px; border-radius:50%; cursor:pointer; display:grid; place-items:center; transition:border-color .2s, transform .1s;}
+  button.play:hover{border-color:var(--pip)} button.play:active{transform:scale(.94)} button.play svg{width:18px;height:18px;fill:var(--ink)}
+  .timeline{flex:1 1 320px; min-width:220px;}
+  .segs{display:flex; gap:4px; height:8px}
+  .seg{flex:1; background:var(--hair); border-radius:4px; overflow:hidden; cursor:pointer; position:relative}
+  .seg i{position:absolute; inset:0; width:0; background:linear-gradient(90deg,var(--pip),var(--proof)); display:block}
+  .labels{display:flex; justify-content:space-between; margin-top:7px; font:600 10px/1 var(--mono); letter-spacing:.08em; color:var(--muted)}
+  .tcbox{font:600 12px/1 var(--mono); color:var(--muted); min-width:92px; text-align:right} .tcbox b{color:var(--ink)}
+  .speed{appearance:none; border:1px solid var(--hair); background:var(--panel); color:var(--muted);
+    font:600 11px/1 var(--mono); letter-spacing:.06em; padding:9px 11px; border-radius:9px; cursor:pointer}
+  .speed:hover{border-color:var(--pip); color:var(--ink)}
+
+  .shots{margin:34px auto 0; max-width:var(--stagew)}
+  .shots h2{font-size:12px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-family:var(--mono); font-weight:600; margin:0 0 12px}
+  .grid2{display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px}
+  .shot{border:1px solid var(--hair); border-radius:11px; padding:12px 13px; background:var(--panel); cursor:pointer; transition:border-color .2s, background .2s; display:flex; flex-direction:column; gap:6px}
+  .shot:hover{border-color:var(--pip)} .shot.active{border-color:var(--pip); background:color-mix(in oklab, var(--pip) 8%, transparent)}
+  .shot .sh{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .shot .n{font:600 10.5px/1 var(--mono); color:var(--muted); letter-spacing:.08em}
+  .shot .t{font-weight:600; font-size:13px} .shot .m{font-size:11.5px; color:var(--muted); line-height:1.45}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:4px}
+  footer{max-width:var(--stagew); margin:30px auto 0; color:var(--muted); font-size:12px; border-top:1px solid var(--hair); padding-top:14px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  footer .mono{font-family:var(--mono)}
+  @media (max-width:560px){ .tcbox{display:none} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="kicker">The Gradient Papers · Animatic player</div>
+      <h1 id="h1">Citrate — the public computer that runs AI, and can prove it</h1>
+    </div>
+    <div class="sub" id="sub">Pick a paper. Abstract motion stands in for final art; the timing, beats, and narration are the real cut.</div>
+  </header>
+
+  <div class="picker" id="picker"></div>
+
+  <div class="stage-shell">
+    <div class="stage">
+      <canvas id="c" aria-hidden="true"></canvas>
+      <div class="eyebrow"><span class="tc" id="eyTc">00:00</span><span aria-hidden="true">·</span><span class="st" id="eySt"></span></div>
+      <div class="title-ov" id="titleOv"><div class="lbl" id="ovLbl"></div><div class="lg" id="ovLg"></div></div>
+      <div class="cap" id="cap" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="transport">
+    <button class="play" id="play" aria-label="Play or pause"><svg id="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg></button>
+    <div class="timeline"><div class="segs" id="segs"></div>
+      <div class="labels"><span>0:00</span><span id="totLbl"></span><span id="endLbl"></span></div></div>
+    <div class="tcbox"><b id="tc">0:00</b> / <span id="tot2"></span></div>
+    <button class="speed" id="speed">1×</button>
+  </div>
+
+  <section class="shots"><h2>Shot list</h2><div class="grid2" id="grid"></div></section>
+
+  <footer>
+    <span>Source: <span class="mono">media/screenplay/</span> · guide-motif <b style="color:var(--pip)">Pip</b> · 12 papers</span>
+    <span class="mono">space play/pause · ← → scene · click a chip to switch paper</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  // ---------- content: all 12 papers ----------
+  // scenes: [start,end,title,motif,vo]
+  const DATA = {
+    "0":{rom:"0", accent:"pip", title:"The Gradient Papers — a 90-second map",
+      sub:"Twelve papers, one idea: consensus and learning are the same process.", S:[
+      [0,14,"One Idea","flythrough",'Twelve papers, one idea: consensus and learning are the same process. A network that learns by agreeing.'],
+      [14,42,"What’s Built","flythrough",'A public computer that runs AI and proves it. A network that treats disagreement as information. A rulebook it can rewrite. A mind with labeled rooms. These run today.'],
+      [42,66,"Specified, and Ideas","flythrough",'Teaching the network like a mentor. Value that leaves without selling the fuel. Analog chips that whisper “skip this.” Ancient jellyfish that solved leaderless coordination.'],
+      [66,86,"What’s Real vs Proposed","maturity",'The series always marks what’s built, what’s only specified, and what’s still just an idea. No blur between them.'],
+      [86,102,"Begin Anywhere","finale",'Bottom-up or top-down, it’s one story: don’t separate consensus from cognition. Start with any paper.']]},
+    "1":{rom:"I", accent:"pip", title:"Citrate — the public computer that runs AI, and can prove it",
+      sub:"Consensus and computation, in parallel, with AI built in — and checkable.", S:[
+      [0,28,"A Computer That Belongs to Everyone","spark",'Imagine a computer that belongs to no one, and to everyone. Thousands of strangers run it together, and we wanted it to run AI.'],
+      [28,55,"The Old Way Was a Single Line","queue",'Most blockchains have a bottleneck. Everything waits in a single line, one block at a time. Too slow for a machine that has to think.'],
+      [55,90,"Open Every Lane","parallel",'Citrate opens every lane at once. Many blocks form in parallel, then weave into one shared order everyone agrees on.'],
+      [90,118,"A Save Point Nobody Can Undo","ring",'Every so often a committee locks a section in place, a save point that can’t be rewound. Once it’s set, it’s final.'],
+      [118,152,"Runs Today’s Apps — and Runs AI","grid",'It speaks the common smart-contract language, and AI is built into the machine, running the same on every computer, exactly.'],
+      [152,185,"Check the AI’s Homework","gem",'It can check the AI’s homework, a small proof the work was done right. The reward, SALT, flows to the people who run the network.'],
+      [185,222,"The Honest Catch","catch",'We stay honest. Our headline speed is a goal, not a finished benchmark, and the strongest proof mode ships switched off by default, for now.'],
+      [222,248,"Why It Matters, and What’s Next","finale",'A public place to run AI where you don’t trust the operator, you check them. Next: treating disagreement as information.']]},
+    "2":{rom:"II", accent:"contra", title:"Paraconsistent Consensus — disagreement as information",
+      sub:"Keep contradictions instead of averaging them away, so a router can use them.", S:[
+      [0,26,"The Hung Jury","spark",'Most networks treat disagreement as noise to average away, like forcing a split jury to fake a unanimous verdict.'],
+      [26,64,"Keep the “Both”","split",'What if disagreement were information? Belnap logic keeps a “both” — supported and contradicted at once — instead of blurring to grey.'],
+      [64,98,"Four Verdicts, Per Dimension","split",'Each node votes true, false, both, or unknown. The “both” is preserved and handed to a router that learns to use it.'],
+      [98,128,"At the Save-Points","ring",'This isn’t inside the agreement rule. It’s a layer on top of classical consensus, run at the network’s save-points.'],
+      [128,160,"Provably Hard to Fool","gem",'The robust core is machine-checked: under an honest majority, a Byzantine minority cannot flip the result.'],
+      [160,198,"The Honest Catch","catch",'The four-valued logic sits above consensus, not inside the finality rule. And whether the whole learning loop converges is still a conjecture.'],
+      [198,222,"Smarter Together","finale",'A network that treats disagreement as data, not a problem to erase. Next: teaching that network like a mentor.']]},
+    "3":{rom:"III", accent:"pip", title:"The Mentorship Protocol — teach the network like a mentor",
+      sub:"Strong nodes hand small grafts of skill to weaker ones, at save-points.", S:[
+      [0,26,"The Server That Forgets","spark",'A plain averaging server forgets who’s good at what. It gives no guidance and never improves as a teacher.'],
+      [26,64,"The Graft","graft",'Teach the network like a mentor: a strong node grows a small graft of skill and hands it to a weaker one, which brightens.'],
+      [64,96,"In Rounds","ring",'It happens in rounds, at save-points. Today’s student becomes tomorrow’s teacher; the system rewards improvement, not just talent.'],
+      [96,128,"A Team of Specialists","flow",'Over rounds, complementary specialists emerge, each strong where the others are weak, coordinated by a learned router.'],
+      [128,166,"The Honest Catch","catch",'The mechanism is built and runs on-chain, but whether the team-learning outcomes actually emerge is still an untested hypothesis. And it improves in rounds, not continuously.'],
+      [166,190,"Learning by Teaching","finale",'Knowledge shared is value created. Next: the guardrails that keep AI builders honest.']]},
+    "4":{rom:"IV", accent:"green", title:"Behavioral Issues — guardrails for AI coders",
+      sub:"Write the check first; the AI only earns green by passing it.", S:[
+      [0,26,"The Eager Assistant","spark",'An eager AI coder adds features you didn’t ask for, forgets decisions an hour later, and quietly breaks what worked.'],
+      [26,62,"Write the Check First","gate",'The fix: write the check before the build. Red means not done; green means done. The AI only earns green by passing your test.'],
+      [62,96,"Red, Green, Tidy","gate",'Each step is a gate: make it fail first, make it pass, then tidy up without breaking the green. A verifiable checkpoint every time.'],
+      [96,126,"The Test Is the Mentor","graft",'The test suite is the mentor; the coder is the student; a passing test is knowledge transferred.'],
+      [126,164,"The Honest Catch","catch",'These are a practitioner’s field notes, not a controlled study. The method became our framework, evidence it’s livable at real scale, not proof it’s optimal.'],
+      [164,188,"Discipline From the Process","finale",'The guardrail comes from the process, not from asking the AI to be careful. Next: can the silicon itself be more efficient?']]},
+    "5":{rom:"V", accent:"proof", title:"ATIS — let cheap analog electronics whisper “skip this”",
+      sub:"Pre-filter unimportant words before the expensive digital attention runs.", S:[
+      [0,26,"Reading Every Word","spark",'Transformers do enormous math on every word, even the ones that clearly don’t matter. Most of that work is wasted.'],
+      [26,60,"The Doorman","sieve",'Let cheap analog electronics whisper “skip this” before the expensive math runs, a doorman waving obvious no-shows away before the VIP line.'],
+      [60,92,"Only the Important Pass","sieve",'A coarse, ultra-low-power sieve drops the clearly unimportant words. Only what matters reaches the costly digital step.'],
+      [92,132,"The Honest Catch","catch",'This is theoretical. No prototype exists. And there’s a real catch: converting digital to analog is a toll at the door that can cost more than the shortcut saves.'],
+      [132,158,"An Idea, Honestly Labeled","finale",'A hardware idea that stands on its own. Nothing else in the series builds it, and we say so. Next: how value leaves the network.']]},
+    "6":{rom:"VI", accent:"pip", title:"The Memetic Money Portal — value out, without selling the fuel",
+      sub:"Separate the liquidity instrument from the gas token.", S:[
+      [0,26,"The ICO Paradox","spark",'Every network needs outside money, but selling your own fuel token to raise it dilutes the thing that runs the network.'],
+      [26,56,"Separate the Instruments","shell",'The durable idea: separate the instrument that brings in liquidity from the gas token, so raising never dilutes the fuel.'],
+      [56,88,"The Bridge We Didn’t Build","bridge",'Our first design, an NFT bridge, was drawn and then set aside. Cross-chain bridges are among the most attacked things in crypto.'],
+      [88,120,"What We Built Instead","shell",'A wrapped token that moves without gas, and a hired market-maker kept on a governance leash to keep prices fair.'],
+      [120,158,"The Honest Catch","catch",'The market-maker is a trust dependency, bounded by governance. No day-one cash earnings, and a licensed-exchange listing is pending.'],
+      [158,182,"Value as Light","finale",'Value leaves as light that flows, never a coin sold from under the network. Next: who should own the models?']]},
+    "7":{rom:"VII", accent:"pip", title:"The Mozi Cooperative — the builders own the models",
+      sub:"Pay and grant ownership by measured contribution, not by capital.", S:[
+      [0,26,"Owned by Capital","spark",'Today, AI is owned by whoever supplies the most capital, not by the people who train, support, and improve the models.'],
+      [26,60,"Ownership by Contribution","flow",'Pay and grant ownership by measured contribution: running nodes, providing data, making adapters, building apps.'],
+      [60,92,"Value Flows Back","flow",'Every contribution is recorded on-chain, and value flows back to each contributor in proportion to what they gave.'],
+      [92,130,"The Honest Catch","catch",'The accounting core is deployed and real, but the fuller cooperative suite isn’t on the main chain yet. Free-riders and Sybil identities aren’t solved.'],
+      [130,154,"A Co-op for AI","finale",'A farmers’ co-op for intelligence: the people who make it work, own it. Next: the rulebook that governs it all.']]},
+    "8":{rom:"VIII", accent:"proof", title:"The BR1J Constitution — a rulebook the network can rewrite",
+      sub:"Contribution-weighted governance with a living amendment process.", S:[
+      [0,26,"Who Governs Everyone’s Network?","spark",'A network that belongs to everyone still needs rules, and a way to change them without a boss.'],
+      [26,62,"A Parliament of Light","parliament",'The lattice writes its own rulebook. Your vote comes from your track record of contribution, not the size of your wallet.'],
+      [62,96,"A Living Document","parliament",'And it’s amendable: a save-point ring that can be re-cast, so the community can change any rule, even the founders’.'],
+      [96,134,"The Honest Catch","catch",'The founders wrote rules they benefit from; the amendment power is the check. Contribution-weighted governance can be slow, and the human-AI partnership is aspirational.'],
+      [134,158,"Rules You Earn","finale",'Rules the members write by earning their voice, and can always rewrite. Next: where the whole design came from.']]},
+    "9":{rom:"IX", accent:"contra", title:"The Medusa Paradigm — jellyfish already solved this",
+      sub:"Biology as design inspiration, an analogy, not proof.", S:[
+      [0,28,"Five Hundred Million Years","jelly",'Long before us, jellyfish coordinated complex behavior with no brain at all, a nerve net of local parts.'],
+      [28,64,"A Wave With No Conductor","jelly",'Like a wave rippling through a stadium crowd, coordination emerges from local rules, with no one in charge.'],
+      [64,98,"Eight Traits, Mapped","zones",'Eight jellyfish traits map to network features. The stinging cell that fires on its own becomes automatic, self-funding defense.'],
+      [98,138,"The Honest Catch","catch",'These are analogies, functional not mechanistic. No jellyfish runs a consensus protocol. The guarantees come from math; the jellyfish is the muse, not the evidence.'],
+      [138,162,"Old Oceans, New Networks","finale",'Ancient biology as a well of ideas, kept honest. Next: how the network checks an AI’s work.']]},
+    "10":{rom:"X", accent:"proof", title:"The Substrate of Verifiable Inference — checking an AI’s homework",
+      sub:"A proof path for small work, an attestation path for big work.", S:[
+      [0,26,"Prove It, Without Redoing It","spark",'When an AI says it did the work, how does the network check, without paying to redo the whole thing?'],
+      [26,58,"A Proof You Can Re-check","gem",'For small, exact work: a cryptographic proof you can check line by line, near-airtight, no trust required.'],
+      [58,90,"A Stamp From Trusted Hardware","gate",'For big work too costly to prove: a tamper-evident stamp from a trusted enclave, a notary that vouches the work happened.'],
+      [90,120,"Identical on Every Machine","grid",'Underneath both, math that comes out identical on every computer, so a proof or a re-run actually means something.'],
+      [120,158,"The Honest Catch","catch",'The proof engine is real but ships switched off by default. And the stamp is a wider circle of trust than a proof, used only where proving isn’t practical, never presented as equal.'],
+      [158,182,"Two Kinds of Trust","finale",'Prove what’s provable; attest what isn’t, and always say which. Next: an AI you can see think.']]},
+    "11":{rom:"XI", accent:"zones", title:"NAT — a mind with labeled rooms",
+      sub:"Named zones over a fixed layout, so every answer is verifiable by construction.", S:[
+      [0,30,"The Blur","spark",'Most AI is one big undifferentiated blur. When it answers, no one can point to the part that did the thinking.'],
+      [30,66,"Draw the Rooms First","zones",'NAT’s move: draw the rooms first. Split the model into named zones over a fixed layout, each doing its job.'],
+      [66,100,"An Itemized Receipt","zones",'Every answer comes with a receipt, a replayable trace of exactly which rooms fired, and why. The trace is the product.'],
+      [100,132,"More With the Same","gem",'Verifiable by construction, and in tests so far it does more with the same number of parameters, at small scale.'],
+      [132,172,"The Honest Catch","catch",'“Does more” is registered as at-least-as-good, not a formal win. The edge widens up to two million parameters, then goes flat at thirty-two million, unresolved. The networked training isn’t demonstrated yet.'],
+      [172,196,"Black Box to Glass Box","finale",'A transparent factory with a camera on every line. This is the substrate the whole series was building toward.']]}
+  };
+  const ORDER = ["0","1","2","3","4","5","6","7","8","9","10","11"];
+  const accentVar = {pip:"--pip",proof:"--proof",contra:"--contra",green:"--green",danger:"--danger",ink:"--ink",muted:"--muted",zones:"--pip"};
+
+  // ---------- palette ----------
+  const root=document.documentElement; let PAL={}, ZONES=[];
+  function readPalette(){const s=getComputedStyle(root),g=k=>s.getPropertyValue(k).trim();
+    PAL={bg:g("--bg"),bg2:g("--bg2"),lattice:g("--lattice"),node:g("--node"),pip:g("--pip"),proof:g("--proof"),
+      contra:g("--contra"),green:g("--green"),danger:g("--danger"),ink:g("--ink"),muted:g("--muted"),hair:g("--hair")};
+    ZONES=[PAL.pip,PAL.proof,PAL.contra,PAL.green,"#7AA2FF","#FF9F45"];}
+  readPalette();
+  new MutationObserver(readPalette).observe(root,{attributes:true,attributeFilter:["data-theme"]});
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>setTimeout(readPalette,0));
+
+  // ---------- canvas ----------
+  const cv=document.getElementById("c"),ctx=cv.getContext("2d"); let W=0,H=0,DPR=1,nodes=[],motes=[];
+  function resize(){const r=cv.getBoundingClientRect(); DPR=Math.min(2,window.devicePixelRatio||1);
+    W=r.width;H=r.height;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0); buildLattice();}
+  function buildLattice(){nodes=[]; const gx=Math.max(14,Math.round(W/44)),gy=Math.max(8,Math.round(H/44));
+    for(let j=0;j<=gy;j++)for(let i=0;i<=gx;i++){const x=(i/gx)*W,y=(j/gy)*H; nodes.push({x,y,bx:x,by:y,ph:Math.random()*6.28,gx});}
+    motes=[]; const N=reduce?10:32; for(let k=0;k<N;k++)motes.push({x:Math.random()*W,y:Math.random()*H,vx:(Math.random()-.5)*.12,vy:(Math.random()-.5)*.12,r:Math.random()*1.3+.4,a:Math.random()*.5+.2});}
+  const eo=t=>1-Math.pow(1-t,3); const lerp=(a,b,t)=>a+(b-a)*t;
+  function hex(c,a){if(!c)return`rgba(150,150,150,${a})`; if(c.startsWith("rgb"))return c;
+    const h=c.replace("#",""); const n=parseInt(h.length===3?h.split("").map(x=>x+x).join(""):h,16);
+    return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;}
+  function pip(x,y,rad,col,alpha){const g=ctx.createRadialGradient(x,y,0,x,y,Math.max(1,rad));
+    g.addColorStop(0,hex(col,alpha));g.addColorStop(.4,hex(col,alpha*.5));g.addColorStop(1,hex(col,0));
+    ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,Math.max(1,rad),0,6.2832);ctx.fill();
+    ctx.fillStyle=hex(col,Math.min(1,alpha+.25));ctx.beginPath();ctx.arc(x,y,Math.max(1.6,rad*.14),0,6.2832);ctx.fill();}
+  function crystal(x,y,s,col,a){ctx.fillStyle=hex(col,a);ctx.strokeStyle=hex(col,Math.min(1,a+.2));ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(x,y-s);ctx.lineTo(x+s*.7,y);ctx.lineTo(x,y+s);ctx.lineTo(x-s*.7,y);ctx.closePath();ctx.fill();ctx.stroke();}
+  function gemShape(x,y,s,col,a){ctx.fillStyle=hex(col,a);ctx.strokeStyle=hex(col,Math.min(1,a+.25));ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(x,y-s);ctx.lineTo(x+s,y-s*.2);ctx.lineTo(x+s*.6,y+s);ctx.lineTo(x-s*.6,y+s);ctx.lineTo(x-s,y-s*.2);ctx.closePath();ctx.fill();ctx.stroke();
+    ctx.strokeStyle=hex(col,a*.6);ctx.beginPath();ctx.moveTo(x,y-s);ctx.lineTo(x,y+s);ctx.moveTo(x-s,y-s*.2);ctx.lineTo(x+s,y-s*.2);ctx.stroke();}
+  function rr(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function node(x,y,r,col,a){ctx.fillStyle=hex(col,a);ctx.beginPath();ctx.arc(x,y,r,0,6.2832);ctx.fill();}
+
+  function draw(time){
+    const i=curScene(), sc=P.S[i], p=Math.min(1,(clock-sc[0])/(sc[1]-sc[0])), motif=sc[3];
+    const dim = motif==="catch" ? lerp(1,.42,eo(Math.min(1,p*1.5))) : 1;
+    const AC = getComputedStyle(root).getPropertyValue(accentVar[P.accent]).trim() || PAL.pip;
+    ctx.clearRect(0,0,W,H);
+    const bg=ctx.createRadialGradient(W/2,H*.1,0,W/2,H*.1,Math.max(W,H));
+    bg.addColorStop(0,hex(PAL.bg2,1));bg.addColorStop(1,hex(PAL.bg,1));ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+    const reveal = (i===0 && curPaper==="1") ? eo(Math.min(1,p*1.15)) : 1;
+    drawLattice(time,reveal,dim); drawMotes(dim);
+    (MOTIF[motif]||MOTIF.spark)(p,time,dim,AC);
+  }
+  function drawLattice(time,reveal,dim){const cx=W/2,cy=H/2,maxd=Math.hypot(W/2,H/2);
+    ctx.lineWidth=1; ctx.strokeStyle=hex(PAL.lattice,1); ctx.globalAlpha=.8*dim;
+    const gx=nodes.length?nodes[0].gx:14;
+    for(let idx=0;idx<nodes.length;idx++){const n=nodes[idx];
+      if(Math.hypot(n.bx-cx,n.by-cy)/maxd>reveal)continue;
+      const jit=reduce?0:Math.sin(time/1400+n.ph)*1.2; n.x=n.bx+jit; n.y=n.by+(reduce?0:Math.cos(time/1500+n.ph)*1.2);
+      const rt=(idx%(gx+1))!==gx?nodes[idx+1]:null, dn=nodes[idx+(gx+1)];
+      if(rt&&Math.hypot(rt.bx-cx,rt.by-cy)/maxd<=reveal){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(rt.bx,rt.by);ctx.stroke();}
+      if(dn&&Math.hypot(dn.bx-cx,dn.by-cy)/maxd<=reveal){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(dn.bx,dn.by);ctx.stroke();}}
+    for(let idx=0;idx<nodes.length;idx++){const n=nodes[idx]; if(Math.hypot(n.bx-cx,n.by-cy)/maxd>reveal)continue;
+      const tw=reduce?.5:(.5+.5*Math.sin(time/900+n.ph*2)); ctx.fillStyle=hex(PAL.node,1); ctx.globalAlpha=(.32+tw*.4)*dim;
+      ctx.beginPath();ctx.arc(n.x,n.y,1.1,0,6.2832);ctx.fill();}
+    ctx.globalAlpha=1;}
+  function drawMotes(dim){for(const m of motes){if(!reduce){m.x+=m.vx;m.y+=m.vy;if(m.x<0||m.x>W)m.vx*=-1;if(m.y<0||m.y>H)m.vy*=-1;}
+    ctx.fillStyle=hex(PAL.node,1);ctx.globalAlpha=m.a*.5*dim;ctx.beginPath();ctx.arc(m.x,m.y,m.r,0,6.2832);ctx.fill();}ctx.globalAlpha=1;}
+
+  // ---------- motif library ----------
+  const MOTIF = {
+    spark(p,t,dim,AC){pip(W/2,H/2,24+8*Math.sin(t/500),AC,.5*eo(Math.min(1,p*1.4))+.12);},
+    queue(p,t,dim,AC){const x=W*.5,top=H*.16,bot=H*.84,n=7,step=(bot-top)/n,sh=(p*step);
+      for(let i=0;i<n;i++)crystal(x,top+i*step+(sh%step),12,PAL.muted,.5); pip(W*.82,H*.5,15,AC,.26+.06*Math.sin(t/600));},
+    parallel(p,t,dim,AC){const L=7,burst=eo(Math.min(1,p*1.6)),thr=eo(Math.max(0,(p-.5)*2)),cx=W/2;
+      for(let l=0;l<L;l++){const lx0=cx+(l-(L-1)/2)*(W*.11),lx=lerp(cx,lx0,burst),fx=lerp(lx,cx,thr);
+        for(let i=0;i<5;i++)crystal(fx,H*.2+i*(H*.6/4),10,AC,.5*burst);}
+      ctx.strokeStyle=hex(AC,.6*thr);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,H*.16);ctx.lineTo(cx,H*.86);ctx.stroke();
+      pip(cx,H/2,18+8*burst,AC,.3+.3*burst);},
+    ring(p,t,dim,AC){const cx=W/2;ctx.strokeStyle=hex(AC,.45);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,H*.16);ctx.lineTo(cx,H*.86);ctx.stroke();
+      const rp=eo(Math.min(1,p*1.3));ctx.strokeStyle=hex(PAL.ink,.8*(1-Math.max(0,(p-.7)/.3)));ctx.lineWidth=3;
+      ctx.beginPath();ctx.arc(cx,H*.5,lerp(H*.5,H*.16,rp),0,6.2832);ctx.stroke();
+      if(p>.5){const h=(p-.5)*2*H*.4;ctx.strokeStyle=hex(PAL.ink,.9);ctx.lineWidth=5;ctx.beginPath();ctx.moveTo(cx,H*.5-h/2);ctx.lineTo(cx,H*.5+h/2);ctx.stroke();}
+      pip(cx,H*.5,15,AC,.38);},
+    grid(p,t,dim,AC){const s=6;for(let i=0;i<s;i++){const x=W*(.2+.6*i/(s-1)),y=H*(.32+(i%2)*.34);
+      ctx.strokeStyle=hex(AC,.5);ctx.lineWidth=1.4;rr(x-16,y-11,32,22,5);ctx.stroke();
+      const rp=(t/700)%1;ctx.strokeStyle=hex(AC,.4*(1-rp));ctx.lineWidth=1.1;ctx.beginPath();ctx.arc(x,y,rp*24,0,6.2832);ctx.stroke();}
+      pip(W*.5,H*.5,15,AC,.3);},
+    gem(p,t,dim,AC){const cx=W*.5,cy=H*.46,cr=eo(Math.min(1,p*1.5));
+      ctx.strokeStyle=hex(AC,.5*(1-cr));ctx.lineWidth=1.4;for(let i=0;i<10;i++){const a=i/10*6.28;ctx.beginPath();
+        ctx.moveTo(cx+Math.cos(a)*42*(1-cr),cy+Math.sin(a)*42*(1-cr));ctx.lineTo(cx+Math.cos(a+2)*30*(1-cr),cy+Math.sin(a+2)*30*(1-cr));ctx.stroke();}
+      gemShape(cx,cy,20*cr,AC,.7*cr);
+      if(p>.55){const cp=(p-.55)/.45;ctx.strokeStyle=hex(AC,cp);ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(cx-9,cy+1);ctx.lineTo(cx-2,cy+8);ctx.lineTo(cx+11,cy-9);ctx.stroke();}},
+    split(p,t,dim,AC){const cx=W/2,cy=H*.46, sep=eo(Math.min(1,p*1.5))*W*.12;
+      // the bad thing: grey blur behind
+      ctx.globalAlpha=.5*(1-Math.min(1,p*1.5));node(cx,cy,40,PAL.muted,.4);ctx.globalAlpha=1;
+      // split node: gold + magenta halves kept apart
+      pip(cx-sep,cy,20,PAL.pip,.5);pip(cx+sep,cy,20,PAL.contra,.5);
+      ctx.strokeStyle=hex(PAL.muted,.4);ctx.setLineDash([4,4]);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx,cy-30);ctx.lineTo(cx,cy+30);ctx.stroke();ctx.setLineDash([]);
+      pip(W*.5,H*.8,10,AC,.25);},
+    graft(p,t,dim,AC){const mx=W*.3,my=H*.5,tx=W*.72,ty=H*.5;
+      pip(mx,my,20,AC,.55); // mentor bright
+      const gp=eo(Math.min(1,p*1.4)); const gx=lerp(mx+24,tx-20,gp),gy=my;
+      crystal(gx,gy,8,AC,.7); // graft in transit
+      pip(tx,ty,10+8*gp,AC,.25+.35*gp); // mentee brightens
+      ctx.strokeStyle=hex(AC,.25);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(mx,my);ctx.lineTo(tx,ty);ctx.stroke();},
+    gate(p,t,dim,AC){const cx=W*.5,cy=H*.5,green=getComputedStyle(root).getPropertyValue("--green").trim();
+      const pass=Math.min(1,p*1.4), col = P.accent==="green" ? (p<.5?PAL.danger:green) : AC;
+      // the gate
+      ctx.strokeStyle=hex(col,.7);ctx.lineWidth=3;rr(cx-70,cy-46,140,92,12);ctx.stroke();
+      // fill sweeps up as it passes
+      ctx.fillStyle=hex(col,.14);rr(cx-70,cy+46-92*pass,140,92*pass,12);ctx.fill();
+      // token passing through
+      pip(lerp(cx-120,cx+120,pass),cy,12,col,.5);
+      // rails
+      ctx.strokeStyle=hex(green,.4);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,cy+70);ctx.lineTo(W,cy+70);ctx.moveTo(0,cy-70);ctx.lineTo(W,cy-70);ctx.stroke();},
+    sieve(p,t,dim,AC){const y0=H*.3, gateY=H*.62;
+      // motes falling; dim ones dropped left, bright ones pass the gate
+      const n=14;for(let i=0;i<n;i++){const x=W*(.2+.6*i/(n-1)); const imp=(i%3===0);
+        const fall=((t/1400)+i*.07)%1; const yy=lerp(y0,gateY,fall);
+        if(imp){pip(x,yy,5,AC,.6); if(fall>.95)pip(x,gateY+18,4,AC,.5);}
+        else {node(x-10*fall, yy, 2.4, PAL.muted, .5*(1-fall));}}
+      // the gate line
+      ctx.strokeStyle=hex(AC,.5);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(W*.14,gateY);ctx.lineTo(W*.86,gateY);ctx.stroke();},
+    shell(p,t,dim,AC){const cx=W*.32,cy=H*.5;
+      pip(cx,cy,26,AC,.5); // interior value
+      const pr=eo(Math.min(1,p*1.3));
+      // shell ring around a flowing ribbon to the right
+      ctx.strokeStyle=hex(AC,.5);ctx.lineWidth=2;ctx.beginPath();ctx.ellipse(cx,cy,34,44,0,0,6.2832);ctx.stroke();
+      for(let i=0;i<6;i++){const fx=lerp(cx+40,W*.86,((t/1600)+i/6)%1);pip(fx,cy+Math.sin((t/500)+i)*6,4,AC,.5);}
+      ctx.strokeStyle=hex(AC,.2);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(cx+40,cy);ctx.lineTo(W*.86,cy);ctx.stroke();},
+    bridge(p,t,dim,AC){const cx=W*.5,cy=H*.5;
+      // ghost blueprint of a bridge, drawn then crossed out
+      ctx.strokeStyle=hex(PAL.muted,.5);ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(W*.2,cy+30);ctx.quadraticCurveTo(cx,cy-40,W*.8,cy+30);ctx.stroke();
+      for(let i=1;i<6;i++){const x=lerp(W*.2,W*.8,i/6);ctx.beginPath();ctx.moveTo(x,cy+30-Math.sin(i/6*Math.PI)*60);ctx.lineTo(x,cy+30);ctx.stroke();}
+      // the X
+      const xp=eo(Math.min(1,p*1.4));ctx.strokeStyle=hex(PAL.danger,.8*xp);ctx.lineWidth=4;
+      ctx.beginPath();ctx.moveTo(W*.28,cy-40);ctx.lineTo(W*.72,cy+50);ctx.moveTo(W*.72,cy-40);ctx.lineTo(W*.28,cy+50);ctx.stroke();
+      pip(W*.85,H*.8,10,AC,.25);},
+    flow(p,t,dim,AC){const cx=W*.5,cy=H*.5;const n=8;
+      for(let i=0;i<n;i++){const a=i/n*6.28,r=Math.min(W,H)*.36;const nx=cx+Math.cos(a)*r,ny=cy+Math.sin(a)*r*.8;
+        node(nx,ny,4,AC,.5);
+        // contribution in
+        const ip=((t/1500)+i/n)%1; pip(lerp(nx,cx,ip),lerp(ny,cy,ip),3,PAL.muted,.4*(1-ip));
+        // value back out
+        const op=((t/1500)+i/n+.5)%1; pip(lerp(cx,nx,op),lerp(cy,ny,op),3.5,AC,.55*(1-op*.4));}
+      pip(cx,cy,20,AC,.5);},
+    parliament(p,t,dim,AC){const cx=W*.5,cy=H*.5;
+      // ring of voter nodes pulsing, then a central ring re-casts
+      const n=12;for(let i=0;i<n;i++){const a=i/n*6.28,r=Math.min(W,H)*.34;
+        const vote=.4+.4*Math.sin(t/500+i);node(cx+Math.cos(a)*r,cy+Math.sin(a)*r*.85,4+vote*2,AC,.3+vote*.4);}
+      const rp=eo(Math.min(1,p*1.3));
+      ctx.strokeStyle=hex(P.accent==="proof"?PAL.proof:AC,.7);ctx.lineWidth=2.5;
+      // ring with an opening seam that recloses (amendment)
+      const seam=(1-rp)*0.9; ctx.beginPath();ctx.arc(cx,cy,44,seam,6.2832-seam);ctx.stroke();
+      pip(cx,cy,16,PAL.pip,.4);},
+    jelly(p,t,dim,AC){const cx=W*.5,cy=H*.4;
+      // bell
+      ctx.strokeStyle=hex(AC,.5);ctx.lineWidth=1.5;ctx.beginPath();
+      for(let a=-Math.PI;a<=0;a+=.1){const x=cx+Math.cos(a)*70,y=cy+Math.sin(a)*46;a===-Math.PI?ctx.moveTo(x,y):ctx.lineTo(x,y);}ctx.stroke();
+      // pulsing bell glow
+      pip(cx,cy,30+10*Math.sin(t/600),AC,.18);
+      // tentacles dissolving into lattice
+      for(let i=0;i<7;i++){const x0=cx-60+i*20;ctx.strokeStyle=hex(AC,.4);ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(x0,cy+2);
+        for(let s=0;s<6;s++){const y=cy+2+s*22;ctx.lineTo(x0+Math.sin(t/500+i+s)*8,y);}ctx.stroke();}
+      // nerve-net sparks
+      for(let i=0;i<5;i++){const x=cx-50+((t/900+i*.2)%1)*100;node(x,cy+80+i*14,2,PAL.contra,.5);}},
+    zones(p,t,dim,AC){const cols=3,rows=2,pad=W*.14,gw=(W-pad*2)/cols,gh=(H-pad*1.4)/rows,rp=eo(Math.min(1,p*1.2));
+      let k=0;for(let r=0;r<rows;r++)for(let c=0;c<cols;c++){const x=pad+c*gw,y=H*.16+r*gh,col=ZONES[k%ZONES.length];
+        ctx.globalAlpha=rp;ctx.strokeStyle=hex(col,.55);ctx.lineWidth=1.4;rr(x+6,y+6,gw-12,gh-12,8);ctx.stroke();
+        const beat=.4+.4*Math.sin(t/500+k*1.3);pip(x+gw/2,y+gh/2,10+beat*8,col,.16+beat*.14);ctx.globalAlpha=1;k++;}
+      // comet-trail trace across zones
+      if(p>.4){const tp=((t/1400))%1;const path=[[pad+gw*.5,H*.16+gh*.5],[pad+gw*1.5,H*.16+gh*1.5],[pad+gw*2.5,H*.16+gh*.5]];
+        const seg=Math.min(path.length-1.001,tp*(path.length-1));const si=Math.floor(seg),f=seg-si;
+        const x=lerp(path[si][0],path[si+1][0],f),y=lerp(path[si][1],path[si+1][1],f);
+        pip(x,y,8,PAL.proof,.6);}},
+    flythrough(p,t,dim,AC){ // Pip lights regions across the whole lattice
+      const n=6;for(let i=0;i<n;i++){const x=W*(.12+.76*i/(n-1)),y=H*(.3+ (i%2)*.4);
+        const lit=(Math.sin(t/700 - i*.9)+1)/2; pip(x,y,8+lit*10,ZONES[i%ZONES.length],.12+lit*.3);}
+      const px=W*(.1+.8*((t/2600)%1)); pip(px,H*.5,14,PAL.pip,.5);},
+    maturity(p,t,dim,AC){ // built (solid glow) vs blueprint (faint dashed)
+      for(let i=0;i<3;i++){const x=W*(.24+.14*i);pip(x,H*.44,16,ZONES[i],.5);crystal(x,H*.44,10,ZONES[i],.6);}
+      ctx.setLineDash([5,5]);for(let i=0;i<3;i++){const x=W*(.62+.12*i);ctx.strokeStyle=hex(PAL.muted,.5);ctx.lineWidth=1.4;
+        ctx.beginPath();ctx.moveTo(x,H*.36);ctx.lineTo(x+10,H*.52);ctx.lineTo(x-10,H*.52);ctx.closePath();ctx.stroke();}ctx.setLineDash([]);
+      pip(W*.5,H*.8,10,AC,.2);},
+    catch(p,t,dim,AC){const cx=W*.5,cy=H*.46;pip(cx,cy,14,PAL.pip,.18);
+      ctx.fillStyle=hex(PAL.muted,.7*Math.min(1,p*2));ctx.font=`600 ${Math.round(H*.14)}px ${getComputedStyle(root).getPropertyValue('--disp')}`;
+      ctx.textAlign="center";ctx.textBaseline="middle";ctx.fillText("?",cx,cy-2);ctx.textAlign="start";ctx.textBaseline="alphabetic";},
+    finale(p,t,dim,AC){const cx=W*.5,glow=eo(Math.min(1,p*1.4));
+      for(let i=0;i<16;i++){const x=(Math.sin(i*12.9)*.5+.5)*W,y=(Math.cos(i*7.7)*.5+.5)*H;pip(x,y,6+4*Math.sin(t/400+i),[PAL.pip,PAL.proof][i%2],.2*glow);}
+      ctx.strokeStyle=hex(AC,.5*glow);ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(cx,H*.16);ctx.lineTo(cx,H*.86);ctx.stroke();
+      const px=lerp(cx,W*.9,eo(Math.max(0,(p-.4)/.6)));pip(px,H*.5,15,AC,.5);
+      if(p>.5)pip(W*.92,H*.42,10,PAL.contra,.4*(p-.5)*2);}
+  };
+
+  // ---------- clock / state ----------
+  let curPaper="1", P=DATA["1"], DUR=P.S[P.S.length-1][1], clock=0, playing=true, speed=1, last=performance.now(), shown=-1;
+  function curScene(){for(let i=P.S.length-1;i>=0;i--)if(clock>=P.S[i][0])return i;return 0;}
+  const f=s=>{s=Math.max(0,Math.floor(s));return Math.floor(s/60)+":"+String(s%60).padStart(2,"0");};
+  const fTC=s=>{s=Math.max(0,Math.floor(s));return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0");};
+
+  const el=id=>document.getElementById(id);
+  const capEl=el("cap"),eyTc=el("eyTc"),eySt=el("eySt"),tcEl=el("tc"),titleOv=el("titleOv");
+  let segEls=[],shotEls=[];
+
+  function buildPaperUI(){
+    P=DATA[curPaper]; DUR=P.S[P.S.length-1][1]; shown=-1;
+    el("h1").textContent=P.title; el("sub").textContent=P.sub;
+    el("ovLbl").textContent="Paper "+P.rom; el("ovLg").textContent=P.title;
+    el("totLbl").textContent="Paper "+P.rom+" · ~"+f(DUR); el("endLbl").textContent=f(DUR); el("tot2").textContent=f(DUR);
+    // segments
+    const sw=el("segs");sw.innerHTML="";segEls=[];
+    P.S.forEach((sc,i)=>{const s=document.createElement("div");s.className="seg";s.innerHTML="<i></i>";
+      s.title="Scene "+(i+1)+" · "+sc[2];s.addEventListener("click",()=>seek(i));sw.appendChild(s);segEls.push(s);});
+    // shot list
+    const g=el("grid");g.innerHTML="";shotEls=[];
+    P.S.forEach((sc,i)=>{const sh=document.createElement("div");sh.className="shot";sh.tabIndex=0;
+      const col=`var(${accentVar[P.accent]})`;
+      sh.innerHTML=`<div class="sh"><span class="n">SC ${String(i+1).padStart(2,"0")} · ${fTC(sc[0])}</span><span class="dot" style="background:${col}"></span></div><div class="t">${sc[2]}</div><div class="m">${sc[4].slice(0,90)}…</div>`;
+      sh.addEventListener("click",()=>seek(i));sh.addEventListener("keydown",e=>{if(e.code==="Enter")seek(i);});
+      g.appendChild(sh);shotEls.push(sh);});
+    // chips
+    [...el("picker").children].forEach(c=>c.classList.toggle("on",c.dataset.p===curPaper));
+  }
+  function loadPaper(id){curPaper=id;clock=0;playing=true;last=performance.now();buildPaperUI();setIcon();paintUI(true);}
+
+  function paintUI(force){const i=curScene(),sc=P.S[i];
+    eyTc.textContent=fTC(clock);tcEl.textContent=f(clock);
+    titleOv.style.opacity = (clock<2.2)?1:0;
+    if(i!==shown||force){shown=i;eySt.textContent="Scene "+(i+1)+" · "+sc[2];
+      capEl.innerHTML='<span class="q">“</span>'+sc[4]+'<span class="q">”</span>';
+      shotEls.forEach((e,k)=>e.classList.toggle("active",k===i));}
+    for(let k=0;k<segEls.length;k++){const w=k<i?1:k>i?0:Math.max(0,Math.min(1,(clock-P.S[i][0])/(P.S[i][1]-P.S[i][0])));
+      segEls[k].firstChild.style.width=w*100+"%";}}
+  function frame(now){const dt=(now-last)/1000;last=now;
+    if(playing){clock+=dt*speed;if(clock>=DUR){clock=DUR;playing=false;setIcon();}}
+    draw(now);paintUI(false);requestAnimationFrame(frame);}
+
+  const playBtn=el("play"),ic=el("ic");
+  function setIcon(){ic.innerHTML=playing?'<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>':(clock>=DUR?'<path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/>':'<path d="M8 5v14l11-7z"/>');}
+  function toggle(){if(clock>=DUR)clock=0;playing=!playing;last=performance.now();setIcon();}
+  playBtn.addEventListener("click",toggle);
+  el("speed").addEventListener("click",e=>{speed=speed===1?1.5:speed===1.5?2:1;e.target.textContent=speed+"×";});
+  function seek(i){clock=P.S[i][0]+0.001;shown=-1;last=performance.now();paintUI(true);}
+  addEventListener("keydown",e=>{if(e.code==="Space"){e.preventDefault();toggle();}
+    else if(e.code==="ArrowRight")seek(Math.min(P.S.length-1,curScene()+1));
+    else if(e.code==="ArrowLeft")seek(Math.max(0,curScene()-1));});
+
+  // build picker chips
+  const picker=el("picker");
+  ORDER.forEach(id=>{const b=document.createElement("button");b.className="chip";b.dataset.p=id;
+    b.textContent=DATA[id].rom==="0"?"Index":DATA[id].rom;
+    b.title=DATA[id].title;b.addEventListener("click",()=>loadPaper(id));picker.appendChild(b);});
+
+  new ResizeObserver(resize).observe(cv);
+  resize();buildPaperUI();setIcon();paintUI(true);requestAnimationFrame(frame);
+})();
+</script>

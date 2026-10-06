@@ -1,0 +1,466 @@
+<style>
+  :root{
+    --bg:#0A0D18; --bg2:#0E1226; --panel:rgba(150,160,210,.06);
+    --lattice:rgba(140,150,205,.14); --node:rgba(155,165,215,.55);
+    --pip:#F5C542; --proof:#39D0D8; --contra:#E85CB0; --danger:#FF5A5A;
+    --ink:#EBEDF7; --muted:#9AA0C4; --hair:rgba(150,160,210,.16);
+    --disp: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", monospace;
+    --stagew: 980px;
+  }
+  @media (prefers-color-scheme: light){
+    :root{
+      --bg:#EDEFF7; --bg2:#F7F8FC; --panel:rgba(30,40,80,.04);
+      --lattice:rgba(40,52,95,.13); --node:rgba(55,68,125,.5);
+      --pip:#D99A12; --proof:#0E9CA6; --contra:#C93F92; --danger:#D33;
+      --ink:#141830; --muted:#565F80; --hair:rgba(40,52,95,.16);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#0A0D18; --bg2:#0E1226; --panel:rgba(150,160,210,.06);
+    --lattice:rgba(140,150,205,.14); --node:rgba(155,165,215,.55);
+    --pip:#F5C542; --proof:#39D0D8; --contra:#E85CB0; --danger:#FF5A5A;
+    --ink:#EBEDF7; --muted:#9AA0C4; --hair:rgba(150,160,210,.16);
+  }
+  :root[data-theme="light"]{
+    --bg:#EDEFF7; --bg2:#F7F8FC; --panel:rgba(30,40,80,.04);
+    --lattice:rgba(40,52,95,.13); --node:rgba(55,68,125,.5);
+    --pip:#D99A12; --proof:#0E9CA6; --contra:#C93F92; --danger:#D33;
+    --ink:#141830; --muted:#565F80; --hair:rgba(40,52,95,.16);
+  }
+
+  *{box-sizing:border-box}
+  body{margin:0;background:
+      radial-gradient(1200px 700px at 50% -10%, var(--bg2), var(--bg) 60%);
+      color:var(--ink); font-family:var(--disp);
+      -webkit-font-smoothing:antialiased; line-height:1.5;}
+  .wrap{max-width:1120px; margin:0 auto; padding:28px 20px 64px;}
+
+  header.top{display:flex; align-items:baseline; justify-content:space-between;
+    gap:16px; flex-wrap:wrap; padding-bottom:18px; border-bottom:1px solid var(--hair);}
+  .brand{display:flex; flex-direction:column; gap:2px}
+  .kicker{font:600 11px/1 var(--mono); letter-spacing:.22em; text-transform:uppercase;
+    color:var(--muted);}
+  h1{margin:2px 0 0; font-size:clamp(20px,2.4vw,28px); font-weight:650;
+    letter-spacing:-.01em; text-wrap:balance;}
+  .sub{color:var(--muted); font-size:13px; max-width:52ch}
+
+  /* stage */
+  .stage-shell{margin:22px auto 0; max-width:var(--stagew);}
+  .stage{position:relative; aspect-ratio:16/9; width:100%;
+    border:1px solid var(--hair); border-radius:14px; overflow:hidden;
+    background:var(--bg); box-shadow:0 24px 60px -30px rgba(0,0,0,.7);}
+  canvas{position:absolute; inset:0; width:100%; height:100%; display:block}
+  .eyebrow{position:absolute; left:16px; top:14px; z-index:3;
+    display:flex; gap:10px; align-items:center; font:600 11px/1 var(--mono);
+    letter-spacing:.14em; text-transform:uppercase; color:var(--muted);}
+  .eyebrow .tc{color:var(--ink); opacity:.8}
+  .eyebrow .st{color:var(--ink)}
+  .cap{position:absolute; left:0; right:0; bottom:0; z-index:3; padding:26px 24px 22px;
+    background:linear-gradient(to top, rgba(5,7,15,.78), rgba(5,7,15,0));
+    font-size:clamp(14px,1.55vw,18px); font-weight:450; letter-spacing:.005em;
+    color:#EEF0FA; text-shadow:0 1px 12px rgba(0,0,0,.55);}
+  :root[data-theme="light"] .cap{background:linear-gradient(to top, rgba(230,233,244,.92), rgba(230,233,244,0)); color:#1a1f38; text-shadow:none}
+  @media (prefers-color-scheme: light){ :root:not([data-theme="dark"]) .cap{background:linear-gradient(to top, rgba(230,233,244,.92), rgba(230,233,244,0)); color:#1a1f38; text-shadow:none} }
+  .cap b{color:var(--pip); font-weight:650}
+  .cap .q{opacity:.5; font-family:var(--mono); margin-right:2px}
+
+  /* transport */
+  .transport{max-width:var(--stagew); margin:14px auto 0; display:flex; align-items:center;
+    gap:14px; flex-wrap:wrap;}
+  button.play{appearance:none; border:1px solid var(--hair); background:var(--panel);
+    color:var(--ink); width:44px; height:44px; border-radius:50%; cursor:pointer;
+    display:grid; place-items:center; transition:border-color .2s, transform .1s;}
+  button.play:hover{border-color:var(--pip)} button.play:active{transform:scale(.94)}
+  button.play svg{width:18px;height:18px;fill:var(--ink)}
+  .timeline{flex:1 1 320px; min-width:240px;}
+  .segs{display:flex; gap:4px; height:8px}
+  .seg{flex:1; background:var(--hair); border-radius:4px; overflow:hidden; cursor:pointer;
+    position:relative}
+  .seg i{position:absolute; inset:0; width:0; background:linear-gradient(90deg,var(--pip),var(--proof)); display:block}
+  .seg.done i{width:100%}
+  .labels{display:flex; justify-content:space-between; margin-top:7px;
+    font:600 10px/1 var(--mono); letter-spacing:.08em; color:var(--muted)}
+  .tcbox{font:600 12px/1 var(--mono); color:var(--muted); min-width:96px; text-align:right}
+  .tcbox b{color:var(--ink)}
+  .speed{appearance:none; border:1px solid var(--hair); background:var(--panel);
+    color:var(--muted); font:600 11px/1 var(--mono); letter-spacing:.06em;
+    padding:9px 11px; border-radius:9px; cursor:pointer}
+  .speed:hover{border-color:var(--pip); color:var(--ink)}
+
+  /* shot list */
+  .shots{margin:40px auto 0; max-width:var(--stagew)}
+  .shots h2{font-size:13px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted);
+    font-family:var(--mono); font-weight:600; margin:0 0 14px}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:10px}
+  .shot{border:1px solid var(--hair); border-radius:11px; padding:13px 14px; background:var(--panel);
+    cursor:pointer; transition:border-color .2s, background .2s; display:flex; flex-direction:column; gap:7px}
+  .shot:hover{border-color:var(--pip)}
+  .shot.active{border-color:var(--pip); background:color-mix(in oklab, var(--pip) 8%, transparent)}
+  .shot .sh{display:flex; justify-content:space-between; align-items:baseline; gap:8px}
+  .shot .n{font:600 11px/1 var(--mono); color:var(--muted); letter-spacing:.1em}
+  .shot .t{font-weight:600; font-size:13.5px}
+  .shot .m{font-size:12px; color:var(--muted); line-height:1.45}
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;margin-top:5px}
+
+  footer{max-width:var(--stagew); margin:34px auto 0; color:var(--muted); font-size:12px;
+    border-top:1px solid var(--hair); padding-top:16px; display:flex; justify-content:space-between; gap:12px; flex-wrap:wrap}
+  footer .mono{font-family:var(--mono)}
+  a{color:var(--proof)}
+  @media (max-width:560px){ .tcbox{display:none} }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <div class="kicker">The Gradient Papers · No. I · Animatic preview</div>
+      <h1>Citrate — the public computer that runs AI, and can prove it</h1>
+    </div>
+    <div class="sub">A moving-storyboard preview of the Paper I screenplay. Abstract motion stands in for final art; the timing, beats, and narration are the real cut.</div>
+  </header>
+
+  <div class="stage-shell">
+    <div class="stage">
+      <canvas id="c" aria-hidden="true"></canvas>
+      <div class="eyebrow"><span class="tc" id="eyTc">00:00</span><span aria-hidden="true">·</span><span class="st" id="eySt">Hook</span></div>
+      <div class="cap" id="cap" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+
+  <div class="transport">
+    <button class="play" id="play" aria-label="Play or pause">
+      <svg id="ic" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+    </button>
+    <div class="timeline">
+      <div class="segs" id="segs"></div>
+      <div class="labels"><span>0:00</span><span>Paper I · ~4:10</span><span>4:10</span></div>
+    </div>
+    <div class="tcbox"><b id="tc">0:00</b> / 4:10</div>
+    <button class="speed" id="speed">1×</button>
+  </div>
+
+  <section class="shots">
+    <h2>Shot list — 8 scenes</h2>
+    <div class="grid" id="grid"></div>
+  </section>
+
+  <footer>
+    <span>Source: <span class="mono">media/screenplay/No1_screenplay.md</span> · guide-motif <b style="color:var(--pip)">Pip</b></span>
+    <span class="mono">space play/pause · ← → scene · click a segment to jump</span>
+  </footer>
+</div>
+
+<script>
+(() => {
+  "use strict";
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  // ---- scenes (timecodes in seconds, from the screenplay) ----
+  const A = "#F5C542"; // pip/amber  (colors resolved live from CSS vars at draw)
+  const SCENES = [
+    {t0:0,  t1:28,  title:"A Computer That Belongs to Everyone", motif:"unfurl", accent:"pip",
+     vo:'Imagine a computer that belongs to no one, and to everyone. Thousands of strangers run it together. No company owns it. And we wanted it to run AI.'},
+    {t0:28, t1:55,  title:"The Old Way Was a Single Line", motif:"queue", accent:"muted",
+     vo:'Most blockchains have a bottleneck. Everything waits in a single line, one block at a time. Safe, but slow. Too slow for a machine that has to think.'},
+    {t0:55, t1:90,  title:"Open Every Lane", motif:"parallel", accent:"pip",
+     vo:'Citrate opens every lane at once. Many blocks form in parallel, then weave back into one shared order everyone agrees on. Fast, and still one story.'},
+    {t0:90, t1:118, title:"A Save Point Nobody Can Undo", motif:"checkpoint", accent:"ink",
+     vo:'Every so often a committee of the network signs off and locks a section in place, a save point that can’t be rewound. Once it’s set, it’s final.'},
+    {t0:118,t1:152, title:"Runs Today’s Apps — and Runs AI", motif:"determinism", accent:"proof",
+     vo:'It speaks the common language of smart contracts, so today’s tools just work. And AI is built into the machine, running the same on every computer, exactly.'},
+    {t0:152,t1:185, title:"Check the AI’s Homework", motif:"prove", accent:"proof",
+     vo:'It can check the AI’s homework, a small proof the work was done right, without redoing it. The reward, a fuel called SALT, flows to the people who run the network.'},
+    {t0:185,t1:225, title:"The Honest Catch", motif:"catch", accent:"danger",
+     vo:'We stay honest about what’s finished. Our headline speed is a goal, not a finished benchmark. And the strongest proof mode is real, but ships switched off by default, for now.'},
+    {t0:225,t1:250, title:"Why It Matters, and What’s Next", motif:"finale", accent:"contra",
+     vo:'You get a public place to run AI where you don’t have to trust the operator, you can check them. Next: what if a network treated disagreement as information?'}
+  ];
+  const DUR = SCENES[SCENES.length-1].t1;
+  const accentVar = {pip:"--pip",proof:"--proof",contra:"--contra",danger:"--danger",ink:"--ink",muted:"--muted"};
+
+  // ---- palette resolved live (theme aware) ----
+  const root = document.documentElement;
+  let PAL = {};
+  function readPalette(){
+    const s = getComputedStyle(root);
+    const g = k => s.getPropertyValue(k).trim();
+    PAL = {bg:g("--bg"),bg2:g("--bg2"),lattice:g("--lattice"),node:g("--node"),
+      pip:g("--pip"),proof:g("--proof"),contra:g("--contra"),danger:g("--danger"),
+      ink:g("--ink"),muted:g("--muted"),hair:g("--hair")};
+  }
+  readPalette();
+  new MutationObserver(readPalette).observe(root,{attributes:true,attributeFilter:["data-theme"]});
+  matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{setTimeout(readPalette,0)});
+
+  // ---- canvas ----
+  const cv = document.getElementById("c"), ctx = cv.getContext("2d");
+  let W=0,H=0,DPR=1, nodes=[], motes=[];
+  function resize(){
+    const r = cv.getBoundingClientRect();
+    DPR = Math.min(2, window.devicePixelRatio||1);
+    W=r.width; H=r.height; cv.width=W*DPR; cv.height=H*DPR; ctx.setTransform(DPR,0,0,DPR,0,0);
+    buildLattice();
+  }
+  function buildLattice(){
+    nodes=[]; const gx=Math.max(14,Math.round(W/44)), gy=Math.max(8,Math.round(H/44));
+    for(let j=0;j<=gy;j++)for(let i=0;i<=gx;i++){
+      const x=(i/gx)*W, y=(j/gy)*H;
+      nodes.push({x,y,bx:x,by:y,ph:Math.random()*6.28});
+    }
+    motes=[]; const N=reduce?10:34;
+    for(let k=0;k<N;k++)motes.push({x:Math.random()*W,y:Math.random()*H,
+      vx:(Math.random()-.5)*.12,vy:(Math.random()-.5)*.12,r:Math.random()*1.4+.4,a:Math.random()*.5+.2});
+  }
+
+  // easing
+  const eo = t => 1-Math.pow(1-t,3);
+  const ei = t => t*t;
+  function lerp(a,b,t){return a+(b-a)*t}
+  function pip(x,y,rad,col,alpha){
+    const g=ctx.createRadialGradient(x,y,0,x,y,rad);
+    g.addColorStop(0,hex(col,alpha)); g.addColorStop(.4,hex(col,alpha*.5)); g.addColorStop(1,hex(col,0));
+    ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,rad,0,6.2832); ctx.fill();
+    ctx.fillStyle=hex(col,Math.min(1,alpha+.25)); ctx.beginPath(); ctx.arc(x,y,Math.max(1.6,rad*.14),0,6.2832); ctx.fill();
+  }
+  function hex(c,a){ // c is a hex like #F5C542 or rgba(...) ; wrap alpha
+    if(c.startsWith("rgba")||c.startsWith("rgb"))return c;
+    const h=c.replace("#",""); const n=parseInt(h.length===3?h.split("").map(x=>x+x).join(""):h,16);
+    const r=(n>>16)&255,g=(n>>8)&255,b=n&255; return `rgba(${r},${g},${b},${a})`;
+  }
+
+  function draw(time){
+    const scIdx = currentScene();
+    const sc = SCENES[scIdx];
+    const p = Math.min(1,(clock - sc.t0)/(sc.t1 - sc.t0)); // 0..1 within scene
+    const dim = sc.motif==="catch" ? lerp(1,.4,eo(Math.min(1,p*1.5))) : 1;
+
+    ctx.clearRect(0,0,W,H);
+    // vignette bg
+    const bg=ctx.createRadialGradient(W/2,H*.1,0,W/2,H*.1,Math.max(W,H));
+    bg.addColorStop(0,hex(PAL.bg2||"#0E1226",1)); bg.addColorStop(1,hex(PAL.bg||"#0A0D18",1));
+    ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+    // lattice reveal in scene 1
+    const reveal = scIdx===0 ? eo(Math.min(1,p*1.15)) : 1;
+    drawLattice(time,reveal,dim);
+    drawMotes(dim);
+
+    // motif overlays
+    ({unfurl:mUnfurl,queue:mQueue,parallel:mParallel,checkpoint:mCheckpoint,
+      determinism:mDeterminism,prove:mProve,catch:mCatch,finale:mFinale}[sc.motif])(p,time,dim);
+  }
+
+  function drawLattice(time,reveal,dim){
+    const cx=W/2,cy=H/2, maxd=Math.hypot(W/2,H/2);
+    ctx.lineWidth=1;
+    // lines
+    ctx.strokeStyle=hex(PAL.lattice||"rgba(140,150,205,.14)",1);
+    ctx.globalAlpha=.8*dim;
+    const gx=Math.max(14,Math.round(W/44));
+    for(let idx=0;idx<nodes.length;idx++){
+      const n=nodes[idx];
+      const rd=Math.hypot(n.bx-cx,n.by-cy)/maxd;
+      if(rd>reveal) continue;
+      const dx=(idx%(gx+1))!==gx ? nodes[idx+1] : null;
+      const dy=nodes[idx+(gx+1)];
+      const jitter= reduce?0:Math.sin(time/1400+n.ph)*1.2;
+      n.x=n.bx+jitter; n.y=n.by+Math.cos(time/1500+n.ph)*1.2;
+      if(dx){const rr=Math.hypot(dx.bx-cx,dx.by-cy)/maxd; if(rr<=reveal){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(dx.bx+ (reduce?0:Math.sin(time/1400+dx.ph)*1.2),dx.by);ctx.stroke();}}
+      if(dy){const rr=Math.hypot(dy.bx-cx,dy.by-cy)/maxd; if(rr<=reveal){ctx.beginPath();ctx.moveTo(n.x,n.y);ctx.lineTo(dy.bx,dy.by+(reduce?0:Math.cos(time/1500+dy.ph)*1.2));ctx.stroke();}}
+    }
+    // nodes
+    ctx.globalAlpha=dim;
+    for(let idx=0;idx<nodes.length;idx++){
+      const n=nodes[idx]; const rd=Math.hypot(n.bx-cx,n.by-cy)/maxd; if(rd>reveal)continue;
+      const tw=reduce?.5:(.5+.5*Math.sin(time/900+n.ph*2));
+      ctx.fillStyle=hex(PAL.node||"rgba(155,165,215,.55)",1); ctx.globalAlpha=(.35+tw*.4)*dim;
+      ctx.beginPath(); ctx.arc(n.x,n.y,1.1,0,6.2832); ctx.fill();
+    }
+    ctx.globalAlpha=1;
+  }
+  function drawMotes(dim){
+    for(const m of motes){ if(!reduce){m.x+=m.vx;m.y+=m.vy; if(m.x<0||m.x>W)m.vx*=-1; if(m.y<0||m.y>H)m.vy*=-1;}
+      ctx.fillStyle=hex(PAL.node||"#9aa",1); ctx.globalAlpha=m.a*.5*dim;
+      ctx.beginPath(); ctx.arc(m.x,m.y,m.r,0,6.2832); ctx.fill(); }
+    ctx.globalAlpha=1;
+  }
+
+  // ---------- MOTIFS ----------
+  function mUnfurl(p,time){ // Pip sparks center, brightens
+    const b=eo(Math.min(1,p*1.4)); pip(W/2,H/2, 26+8*Math.sin(time/500), PAL.pip,.5*b+.15);
+  }
+  function mQueue(p,time){ // single slow lane of dim crystals ticking down
+    const laneX=W*0.5, top=H*.16, bot=H*.84, n=7;
+    const shift=(p* (bot-top)/n);
+    for(let i=0;i<n;i++){
+      const y=top + i*(bot-top)/n + (shift% ((bot-top)/n));
+      crystal(laneX, y, 12, PAL.muted, .5);
+    }
+    // Pip watching, slightly dim, to the side
+    pip(W*.82,H*.5,16,PAL.pip,.28+.06*Math.sin(time/600));
+  }
+  function mParallel(p,time){ // many lanes burst, then thread to a spine
+    const lanes=7, burst=eo(Math.min(1,p*1.6)), thread=eo(Math.max(0,(p-.5)*2));
+    const cx=W/2;
+    for(let l=0;l<lanes;l++){
+      const lx0 = cx + (l-(lanes-1)/2)* (W*.11);
+      const lx = lerp(cx, lx0, burst);
+      const finalX = lerp(lx, cx, thread);
+      for(let i=0;i<5;i++){
+        const y=H*.2 + i*(H*.6/4);
+        crystal(finalX, y, 10, PAL.pip, .5*burst);
+      }
+    }
+    // spine
+    ctx.strokeStyle=hex(PAL.pip,.6*thread); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx,H*.16); ctx.lineTo(cx,H*.86); ctx.stroke();
+    pip(cx,H/2,20+8*burst,PAL.pip,.35+.3*burst);
+  }
+  function mCheckpoint(p,time){ // white ring pulses, locks a spine segment
+    const cx=W/2; ctx.strokeStyle=hex(PAL.pip,.5); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(cx,H*.16); ctx.lineTo(cx,H*.86); ctx.stroke();
+    const ringP=eo(Math.min(1,p*1.3)); const rad=lerp(H*.5,H*.16,ringP);
+    ctx.strokeStyle=hex(PAL.ink,.85*(1-Math.max(0,(p-.7)/.3))); ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(cx,H*.5,rad,0,6.2832); ctx.stroke();
+    // locked segment hardens
+    if(p>.5){ const h=(p-.5)*2*H*.4;
+      ctx.strokeStyle=hex(PAL.ink,.9); ctx.lineWidth=5;
+      ctx.beginPath(); ctx.moveTo(cx,H*.5-h/2); ctx.lineTo(cx,H*.5+h/2); ctx.stroke(); }
+    pip(cx,H*.5,16+ (p<.6?6*Math.sin(time/300):0),PAL.pip,.4);
+  }
+  function mDeterminism(p,time){ // cyan slots + identical ripple grid
+    // scatter cyan-edged slots
+    const slots=6;
+    for(let i=0;i<slots;i++){ const x=W*(.2+.6*i/(slots-1)), y=H*(.32+ (i%2)*.34);
+      ctx.strokeStyle=hex(PAL.proof,.5); ctx.lineWidth=1.5;
+      rr(x-16,y-11,32,22,5); ctx.stroke(); }
+    // ripple: concentric identical rings from several nodes
+    const rp=(time/700)%1;
+    for(let i=0;i<slots;i++){ const x=W*(.2+.6*i/(slots-1)), y=H*(.32+ (i%2)*.34);
+      ctx.strokeStyle=hex(PAL.proof,.4*(1-rp)); ctx.lineWidth=1.2;
+      ctx.beginPath(); ctx.arc(x,y,rp*26,0,6.2832); ctx.stroke(); }
+    pip(W*.5,H*.5,16,PAL.pip,.34);
+  }
+  function mProve(p,time){ // tangle -> cyan gem + check, amber motes flow
+    const cx=W*.5, cy=H*.46, cr=eo(Math.min(1,p*1.5));
+    // tangle collapsing
+    ctx.strokeStyle=hex(PAL.proof,.5*(1-cr)); ctx.lineWidth=1.4;
+    for(let i=0;i<10;i++){ ctx.beginPath();
+      const a=i/10*6.28; ctx.moveTo(cx+Math.cos(a)*40*(1-cr),cy+Math.sin(a)*40*(1-cr));
+      ctx.lineTo(cx+Math.cos(a+2)*30*(1-cr),cy+Math.sin(a+2)*30*(1-cr)); ctx.stroke(); }
+    // gem
+    gem(cx,cy,20*cr,PAL.proof,.7*cr);
+    // check bloom
+    if(p>.55){ const cp=(p-.55)/.45; ctx.strokeStyle=hex(PAL.proof,cp); ctx.lineWidth=3;
+      ctx.beginPath(); ctx.moveTo(cx-9,cy+1); ctx.lineTo(cx-2,cy+8); ctx.lineTo(cx+11,cy-9); ctx.stroke(); }
+    // amber value motes flowing to corners
+    if(p>.5){ const fp=(p-.5)*2; for(let i=0;i<8;i++){ const a=i/8*6.28;
+      const d=lerp(24,Math.min(W,H)*.42,fp); const x=cx+Math.cos(a)*d, y=cy+Math.sin(a)*d*.7;
+      ctx.fillStyle=hex(PAL.pip,.6*(1-fp)); ctx.beginPath(); ctx.arc(x,y,2.2,0,6.28); ctx.fill(); } }
+  }
+  function mCatch(p,time){ // everything dims; Pip dims; a "?" appears; muted plates
+    const cx=W*.5, cy=H*.46;
+    pip(cx,cy,14,PAL.pip,.18);
+    // question mark of light
+    ctx.fillStyle=hex(PAL.muted,.7*Math.min(1,p*2)); ctx.font=`600 ${Math.round(H*.14)}px ${getComputedStyle(root).getPropertyValue('--disp')}`;
+    ctx.textAlign="center"; ctx.textBaseline="middle"; ctx.fillText("?",cx,cy-2);
+    // two muted plates
+    ctx.strokeStyle=hex(PAL.muted,.45);
+    ctx.lineWidth=1.4;
+    rr(W*.2-40,H*.74-13,80,26,6); ctx.stroke();
+    rr(W*.8-40,H*.74-13,80,26,6); ctx.stroke();
+    // half crystal (target, not proven) + shut gate (off by default)
+    crystal(W*.2, H*.74, 9, PAL.muted, .4*(0.5+0.5*Math.sin(time/500)));
+    ctx.strokeStyle=hex(PAL.proof,.4); rr(W*.8-9,H*.74-9,18,18,4); ctx.stroke();
+    ctx.textAlign="start"; ctx.textBaseline="alphabetic";
+  }
+  function mFinale(p,time){ // whole lattice glows in concert; Pip zips toward magenta glint
+    const cx=W*.5, glow=eo(Math.min(1,p*1.4));
+    // concert glow: brighten a few nodes with accents
+    for(let i=0;i<18;i++){ const x=(Math.sin(i*12.9)*.5+.5)*W, y=(Math.cos(i*7.7)*.5+.5)*H;
+      const c=[PAL.pip,PAL.proof][i%2]; pip(x,y,6+4*Math.sin(time/400+i),c,.22*glow); }
+    // spine
+    ctx.strokeStyle=hex(PAL.pip,.5*glow); ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(cx,H*.16); ctx.lineTo(cx,H*.86); ctx.stroke();
+    // Pip travels right toward a magenta glint
+    const px=lerp(cx,W*.9,eo(Math.max(0,(p-.4)/.6)));
+    pip(px,H*.5,16,PAL.pip,.5);
+    if(p>.5) pip(W*.92,H*.42,10+4*Math.sin(time/300),PAL.contra,.4*(p-.5)*2);
+  }
+
+  // small shape helpers
+  function crystal(x,y,s,col,a){ ctx.fillStyle=hex(col,a); ctx.strokeStyle=hex(col,Math.min(1,a+.2)); ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s*.7,y); ctx.lineTo(x,y+s); ctx.lineTo(x-s*.7,y); ctx.closePath(); ctx.fill(); ctx.stroke(); }
+  function gem(x,y,s,col,a){ ctx.fillStyle=hex(col,a); ctx.strokeStyle=hex(col,Math.min(1,a+.25)); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x+s,y-s*.2); ctx.lineTo(x+s*.6,y+s); ctx.lineTo(x-s*.6,y+s); ctx.lineTo(x-s,y-s*.2); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle=hex(col,a*.6); ctx.beginPath(); ctx.moveTo(x,y-s); ctx.lineTo(x,y+s); ctx.moveTo(x-s,y-s*.2); ctx.lineTo(x+s,y-s*.2); ctx.stroke(); }
+  function rr(x,y,w,h,r){ ctx.beginPath(); ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath(); }
+
+  // ---- clock / loop ----
+  let clock=0, playing=true, speed=1, last=performance.now();
+  function currentScene(){ for(let i=SCENES.length-1;i>=0;i--) if(clock>=SCENES[i].t0) return i; return 0; }
+  function fmt(s){ s=Math.max(0,Math.floor(s)); return Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); }
+  function fmtTC(s){ s=Math.max(0,Math.floor(s)); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0"); }
+
+  const capEl=document.getElementById("cap"), eyTc=document.getElementById("eyTc"),
+    eySt=document.getElementById("eySt"), tcEl=document.getElementById("tc");
+  let shownScene=-1;
+  function paintUI(){
+    const i=currentScene(), sc=SCENES[i];
+    eyTc.textContent=fmtTC(clock); tcEl.textContent=fmt(clock);
+    if(i!==shownScene){
+      shownScene=i; eySt.textContent="Scene "+(i+1)+" · "+sc.title;
+      capEl.innerHTML='<span class="q">“</span>'+sc.vo+'<span class="q">”</span>';
+      // segments + shots active state
+      [...segEls].forEach((e,k)=>e.classList.toggle("done", k<i));
+      [...shotEls].forEach((e,k)=>e.classList.toggle("active", k===i));
+    }
+    // fill active seg proportionally
+    const p=(clock-sc.t0)/(sc.t1-sc.t0);
+    segEls[i] && (segEls[i].querySelector("i").style.width=Math.max(0,Math.min(1,p))*100+"%");
+    for(let k=0;k<i;k++) segEls[k].querySelector("i").style.width="100%";
+    for(let k=i+1;k<segEls.length;k++) segEls[k].querySelector("i").style.width="0%";
+  }
+
+  function frame(now){
+    const dt=(now-last)/1000; last=now;
+    if(playing){ clock+=dt*speed; if(clock>=DUR){ clock=DUR; playing=false; setIcon(); } }
+    draw(now); paintUI();
+    requestAnimationFrame(frame);
+  }
+
+  // ---- controls ----
+  const playBtn=document.getElementById("play"), ic=document.getElementById("ic"),
+    speedBtn=document.getElementById("speed");
+  function setIcon(){ ic.innerHTML = playing
+    ? '<path d="M6 5h4v14H6zM14 5h4v14h-4z"/>'
+    : (clock>=DUR ? '<path d="M12 5V1L7 6l5 5V7a5 5 0 1 1-5 5H5a7 7 0 1 0 7-7z"/>' : '<path d="M8 5v14l11-7z"/>'); }
+  function toggle(){ if(clock>=DUR){clock=0;} playing=!playing; last=performance.now(); setIcon(); }
+  playBtn.addEventListener("click",toggle);
+  speedBtn.addEventListener("click",()=>{ speed = speed===1?1.5:speed===1.5?2:1; speedBtn.textContent=speed+"×"; });
+  addEventListener("keydown",e=>{ if(e.code==="Space"){e.preventDefault();toggle();}
+    else if(e.code==="ArrowRight"){seek(Math.min(SCENES.length-1,currentScene()+1));}
+    else if(e.code==="ArrowLeft"){seek(Math.max(0,currentScene()-1));} });
+  function seek(i){ clock=SCENES[i].t0+0.001; shownScene=-1; last=performance.now(); if(clock<DUR&&!playing){/*keep paused*/} paintUI(); }
+
+  // build segments + shot list
+  const segsWrap=document.getElementById("segs"), grid=document.getElementById("grid");
+  let segEls=[], shotEls=[];
+  SCENES.forEach((sc,i)=>{
+    const seg=document.createElement("div"); seg.className="seg"; seg.innerHTML="<i></i>";
+    seg.title="Scene "+(i+1)+" · "+sc.title; seg.addEventListener("click",()=>seek(i));
+    segsWrap.appendChild(seg); segEls.push(seg);
+
+    const sh=document.createElement("div"); sh.className="shot"; sh.tabIndex=0;
+    const col=`var(${accentVar[sc.accent]})`;
+    sh.innerHTML=`<div class="sh"><span class="n">SC ${String(i+1).padStart(2,"0")} · ${fmtTC(sc.t0)}</span>
+       <span class="dot" style="background:${col}"></span></div>
+       <div class="t">${sc.title}</div><div class="m">${sc.vo.slice(0,96)}…</div>`;
+    sh.addEventListener("click",()=>seek(i));
+    sh.addEventListener("keydown",e=>{if(e.code==="Enter")seek(i);});
+    grid.appendChild(sh); shotEls.push(sh);
+  });
+
+  const ro=new ResizeObserver(resize); ro.observe(cv);
+  resize(); setIcon(); paintUI(); requestAnimationFrame(frame);
+})();
+</script>

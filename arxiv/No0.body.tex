@@ -1,0 +1,207 @@
+\section{The Gradient Papers --- Series Index
+(v3)}\label{the-gradient-papers-series-index-v3}
+
+\begin{quote}
+\emph{``Models are smarter together than apart; consensus and learning
+are the same process; and a network that learns by reaching consensus
+will outperform any network that treats intelligence and agreement as
+separate concerns.''}
+\end{quote}
+
+The Gradient Papers are an eleven-part working dissertation (plus this
+index) documenting the \textbf{Citrate Network}, an AI-native Layer-1
+BlockDAG built on the thesis that distributed learning and distributed
+consensus are the same problem under different names. They are authored
+by \textbf{Larry Klosowski and Lauren Mendenhall} and published by
+\textbf{Citrate Inc.}
+
+This \textbf{v3} revision was written in August 2026 against the live
+chain-id 40204 testnet. Every mechanical claim is traceable to a file
+path or a deployed contract address in the canonical repositories. Where
+a claim is a target, a hypothesis, or not-yet-built, the paper says so.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{What changed from v2, and from the April 2026
+draft}\label{what-changed-from-v2-and-from-the-april-2026-draft}
+
+There were two prior generations. \textbf{v2} (February 2026) was the
+substantive, full-length set. An \textbf{April 2026 draft} (also
+labelled ``v3'') added Paper X but compressed every paper to roughly a
+third of its length and left its evidence audit unfinished. This
+definitive v3 treats \textbf{v2 as the length and substance anchor} and
+updates it to current reality, rather than polishing the thin April
+draft.
+
+The material changes in this generation:
+
+\begin{itemize}
+\tightlist
+\item
+  \textbf{Every claim re-anchored} to a current \texttt{file:line} or a
+  40204 contract address, re-verified rather than inherited. Several
+  stale parameters were corrected against the running chain (chain-id is
+  40204, block time is \textasciitilde2 s on testnet, the BFT checkpoint
+  interval is 50 blocks).
+\item
+  \textbf{Organizations scrubbed to Citrate Inc.} The former
+  publisher/affiliation lines (a foundation, a separate health company)
+  are removed; the subject concepts (the BR1J DAO, the Mozi Cooperative)
+  and the cnidarian \emph{biology} of Paper IX are kept, as are all
+  third-party academic citations.
+\item
+  \textbf{Authorship} is Larry Klosowski and Lauren Mendenhall on all
+  twelve, with a standard AI-assistance disclosure in each
+  Acknowledgments section rather than an AI co-author byline.
+\item
+  \textbf{NAT joins the series as Paper XI}, the strongest ``we actually
+  built it'' artifact.
+\item
+  \textbf{Honesty upgrades and one major correction:} Paper VI's NFT
+  bridge was never deployed and is now documented as a superseded
+  design, with the implemented money-path (a wrapped token, a
+  market-maker, a price feed) put in its place; Paper XI's results are
+  framed as registered non-inferiority with the larger-scale widening
+  left explicitly unresolved; Paper X's zero-knowledge verifier is
+  flagged as shipping off by default; and Paper V is kept honestly
+  theoretical, with no prototype built.
+\end{itemize}
+
+\textbf{Honesty principle.} v3 cites the testnet's actual state. Where
+v2 leaned on aspirational language, v3 says ``this works today,'' ``this
+is specified,'' or ``this is conjectural,'' and a reader can audit each
+claim against the linked code.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Paper inventory (v3
+status)}\label{paper-inventory-v3-status}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.0882}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.2059}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.3235}}
+  >{\raggedright\arraybackslash}p{(\linewidth - 6\tabcolsep) * \real{0.3824}}@{}}
+\toprule\noalign{}
+\begin{minipage}[b]{\linewidth}\raggedright
+\#
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Title
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+v3 status
+\end{minipage} & \begin{minipage}[b]{\linewidth}\raggedright
+Lead anchor
+\end{minipage} \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+0 & Series Index (this) & --- & \texttt{gradient-papers/} \\
+I & Citrate: Protocol Specification for an AI-Native BlockDAG &
+\textbf{Verified} (testnet 40204) &
+\texttt{core/consensus/src/ghostdag.rs:54}; 39 contracts \\
+II & Paraconsistent Consensus & \textbf{Implemented} & Belnap precompile
+\texttt{0x0110} (\texttt{q16/belnap.rs:77}) \\
+III & The Mentorship Protocol & \textbf{Implemented} mechanism,
+\textbf{Hypothesis} outcomes & \texttt{LearningPool\ 0xfc514b82},
+\texttt{LoRAFactory\ 0x6e564d22} \\
+IV & Behavioral Issues (BDD as methodology) & \textbf{Practiced} &
+codified as the Agentile framework \\
+V & ATIS: Analog Token Importance Scoring & \textbf{Theoretical} (no
+code, honest) & external hardware only \\
+VI & The Memetic Money Portal & \textbf{Partially Implemented} &
+\texttt{WrappedSALT\ 0xaa918302} + market-maker + oracle \\
+VII & The Mozi Cooperative & \textbf{Implemented} accounting,
+\textbf{Specified} suite &
+\texttt{ContributionAccounting\ 0xcdd24773} \\
+VIII & The BR1J Constitution & \textbf{Implemented} governance &
+\texttt{TreasuryGovernor\ 0x62e268f2} \\
+IX & The Medusa Paradigm & \textbf{Specified + Practiced} (design
+inspiration) & \texttt{NematocystSlashing\ 0xfeb23abd} \\
+X & The Substrate of Verifiable Inference & \textbf{Implemented},
+feature-gated & \texttt{zkp/halo2/mod.rs:199} (behind
+\texttt{halo2-substrate}) \\
+XI & The Neuroarchitectural Transformer (NAT) & \textbf{Implemented} &
+15 crates; 8 TLA+ specs TLC-green \\
+\end{longtable}
+}
+
+Three maturity tags carry evidence: \textbf{Verified} (on-chain or
+audited), \textbf{Practiced} (a methodology in active use),
+\textbf{Implemented} (code in \texttt{main}, exercised by tests).
+\textbf{Specified}, \textbf{Hypothesis}, and \textbf{Theoretical} mark,
+in decreasing order, what is designed, conjectured, or purely proposed.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Reading paths}\label{reading-paths}
+
+{\def\LTcaptype{none} % do not increment counter
+\begin{longtable}[]{@{}ll@{}}
+\toprule\noalign{}
+Audience & Recommended order \\
+\midrule\noalign{}
+\endhead
+\bottomrule\noalign{}
+\endlastfoot
+\textbf{Engineers} & I → X → XI → IV → II → III \\
+\textbf{Researchers} & XI → II → V → X → III → I \\
+\textbf{Investors} & I → VI → VII → VIII → II \\
+\textbf{Operators} & I → IV → X → IX → VIII \\
+\textbf{Community} & VIII → VII → VI → IX → I \\
+\end{longtable}
+}
+
+The architecture reads either bottom-up (I → XI) or top-down (XI → I).
+Paper IX (the biological inspiration) is placed last on purpose: the
+engineering should stand on its own before the analogy is appreciated.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{The series thesis,
+restated}\label{the-series-thesis-restated}
+
+A blockchain is a system for many machines to agree on a single view of
+truth. A learning network is a system for many machines to converge on a
+single, or richer, representation of the world. These are the same
+shape: both are gradient-descent processes in disguise, one over
+disagreement (slashing-driven equilibrium), one over loss
+(training-driven equilibrium). v3 makes that identity load-bearing,
+every paper that claims to ``do learning'' points at a contract that
+records contribution, and every paper that claims to ``do consensus''
+points at a finality mechanism that treats disagreement as data. The
+series argues that the next generation of distributed intelligence will
+be built by networks that do not separate consensus from cognition.
+Citrate is the first attempt to build one.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Living-document protocol}\label{living-document-protocol}
+
+The v3 papers are not frozen. Each carries a \texttt{status} and a
+\texttt{maturity} in its header, and a claim moves from draft toward
+\emph{active} only when its claims either cite current code or are
+tagged as hypothesis. The canonical home for the series is
+\texttt{citrate-labs/gradient-papers/} (Markdown source of truth, a
+shared arXiv LaTeX build, and rendered PDFs); the four older mirrors are
+superseded and should point here. A companion media layer
+(\texttt{media/}) retells each paper as a 3--5 minute layman story in
+two formats.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\subsection{Authorship and honesty}\label{authorship-and-honesty}
+
+The Gradient Papers are written by Larry Klosowski and Lauren
+Mendenhall, published by Citrate Inc. Drafting and literature triage
+were assisted by AI systems; every mechanical claim was verified by the
+authors against the referenced source and the deployed contracts on
+chain 40204. The opinions in the closing sections of each paper are the
+authors' honest assessment of where the work stands, a record of what we
+know, and of what we know we do not yet know.
+
+\begin{center}\rule{0.5\linewidth}{0.5pt}\end{center}
+
+\emph{This paper is part of the Gradient Papers series, published by
+Citrate Inc.} \emph{Correspondence: Larry@citrate.ai}
